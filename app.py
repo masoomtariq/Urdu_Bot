@@ -23,13 +23,18 @@ def main():
     st.session_state.audio = st.audio_input("Enter Input")
 
     if st.session_state.audio:
+
+        try:
+            
+            get_text()
         
-        get_text()
-    
-        generate_response()
+            generate_response()
 
-        play_audio()
+        except sr.UnknownValueError:
+            st.session_state.text_response = "آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔"
 
+        finally:
+            play_audio()
     if st.button("clear_chat"):
         st.session_state.clear()
         #st.rerun()
@@ -64,12 +69,10 @@ def get_text():
         with sr.AudioFile(file_path) as source:
             r = sr.Recognizer()
             recorded = r.record(source)
-            try:
-                st.session_state.prompt = r.recognize_google(audio_data = recorded, language='ur')
-                st.session_state.user_audio.append(st.session_state.audio)
-            except sr.UnknownValueError:
-                text = "آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔"
-                play_exception(text)
+            
+            st.session_state.prompt = r.recognize_google(audio_data = recorded, language='ur')
+            st.session_state.user_audio.append(st.session_state.audio)
+    temp_file.close()
 
 
 def generate_response():
@@ -94,6 +97,7 @@ def play_audio():
 
         st.session_state.ai_audio.append(audio_file.name)
         st.audio(audio_file.name)
+    audio_file.close()
 
 def play_exception(text):
     ai_audio = gTTS(text=text, lang = 'ur')
@@ -101,6 +105,7 @@ def play_exception(text):
         ai_audio.save(audio_file.name)
 
         st.audio(audio_file.name)
+    audio_file.close()
 
 if __name__ == "__main__":
     main()
