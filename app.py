@@ -37,12 +37,12 @@ def main():
             play_audio()
     if st.button("clear_chat"):
         st.session_state.clear()
-        #st.rerun()
+        initailize_state()
 
         
 
     with st.expander("See Text"):
-        message(st.session_state.text_response, key=str())
+        st.text(st.session_state.text_response)
     
 
 def initailize_state():
@@ -96,14 +96,6 @@ def play_audio():
         audio_file.name
 
         st.session_state.ai_audio.append(audio_file.name)
-        st.audio(audio_file.name)
-    audio_file.close()
-
-def play_exception(text):
-    ai_audio = gTTS(text=text, lang = 'ur')
-    with tempfile.NamedTemporaryFile(delete=True, suffix='.wav') as audio_file:
-        ai_audio.save(audio_file.name)
-
         st.audio(audio_file.name)
     audio_file.close()
 
