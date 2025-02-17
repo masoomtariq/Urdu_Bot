@@ -1,0 +1,5 @@
+streamlit
+SpeechRecognition
+groq
+gtts
+streamlit_chat
