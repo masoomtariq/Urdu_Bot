@@ -46,7 +46,8 @@ def main():
             st.session_state.history.append({'role': 'user', 'content': st.session_state.text_response})
 
         finally:
-            play_audio()
+            if st.session_state.text_response:
+                play_audio()
 
     if st.sidebar.button("Clear Chat History"):
         st.session_state.clear()
