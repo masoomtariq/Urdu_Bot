@@ -1,0 +1,6 @@
+streamlit
+SpeechRecognition
+groq
+gtts
+streamlit_chat
+Python_dotenv
