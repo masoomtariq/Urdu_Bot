@@ -17,7 +17,7 @@ LANGSMITH_TRACING='true'
 LANGSMITH_ENDPOINT = 'https://api.smith.langchain.com'
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
 
-#groq_key = os.getenv("GROQ_API_KEY")
+##groq_key = os.getenv("GROQ_API_KEY")
 google_key = os.getenv("GOOGLE_API_KEY")
 
 def main():
