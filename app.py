@@ -6,19 +6,16 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from streamlit_chat import message
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from gtts import gTTS
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 #Langsmith tracking
 LANGCHAIN_PROJECT = "Urdu Bot"
 LANGSMITH_TRACING='true'
 LANGSMITH_ENDPOINT = 'https://api.smith.langchain.com'
-os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
 
 ##groq_key = os.getenv("GROQ_API_KEY")
-google_key = os.getenv("GOOGLE_API_KEY")
+google_key = st.secrets["GOOGLE_API_KEY"]
 
 def main():
 
