@@ -2,14 +2,23 @@ import streamlit as st
 import speech_recognition as sr
 import tempfile
 from groq import Groq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from streamlit_chat import message
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from gtts import gTTS
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-groq_key = os.getenv("GROQ_API_KEY")
+#Langsmith tracking
+LANGCHAIN_PROJECT = "Urdu Bot"
+LANGSMITH_TRACING='true'
+LANGSMITH_ENDPOINT = 'https://api.smith.langchain.com'
+os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+
+#groq_key = os.getenv("GROQ_API_KEY")
+google_key = os.getenv("GOOGLE_API_KEY")
 
 def main():
 
@@ -36,18 +45,17 @@ def main():
             generate_response()
 
         except sr.UnknownValueError:
-            st.session_state.history.append({'role': 'user', 'content': "کچھ غیر واضح الفاظ"})
+            st.session_state.history.append(HumanMessage(content = "کچھ غیر واضح الفاظ"))
             st.session_state.text_response = "آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔"
-            st.session_state.history.append({'role': 'user', 'content': st.session_state.text_response})
+            st.session_state.history.append(AIMessage(content=st.session_state.text_response))
         
         except sr.RequestError:
-            st.session_state.history.append({'role': 'user', 'content': "کچھ الفاظ"})
+            st.session_state.history.append(HumanMessage(content= "کچھ الفاظ"))
             st.session_state.text_response = "معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔"
-            st.session_state.history.append({'role': 'user', 'content': st.session_state.text_response})
+            st.session_state.history.append(AIMessage(content=st.session_state.text_response))
 
         finally:
-            if st.session_state.text_response:
-                play_audio()
+            play_audio()
 
     if st.sidebar.button("Clear Chat History"):
         st.session_state.clear()
@@ -56,7 +64,7 @@ def main():
         
 
     with st.expander("جواب دیکھیں"):
-        st.success(st.session_state.text_response)
+        st.success(message(st.session_state.text_response))
     
 
 def initailize_state():
@@ -75,7 +83,7 @@ def initailize_state():
             st.session_state[key] = value
     instructions = "آپ ایک مددگار اے آئی اسسٹنٹ ہیں۔ آپ ہر وہ کام کر سکتے ہیں جو مناسب ہو لیکن آپ صرف اردو زبان جانتے ہیں اور ہمیشہ صرف اردو زبان میں جواب دیتے ہیں۔"
     
-    st.session_state.history.append({'role': 'system', 'content': instructions})
+    #st.session_state.history.append(SystemMessage(content= instructions))
 
 def get_text():
     
@@ -94,19 +102,17 @@ def get_text():
 
 
 def generate_response():
-    client = Groq(api_key=groq_key)
+    #client = Groq(api_key=groq_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-pro-exp-02-05", temperature=0, api_key=google_key)
     #st.session_state.history.append({"role": "assistant", "content": "ہیلو! آج میں آپ کی مدد کیسے کر سکتا ہوں؟"})
-    st.session_state.history.append({"role": "user", "content": st.session_state.prompt})
-    chat = client.chat.completions.create(model="llama-3.3-70b-versatile",
-                                        messages = st.session_state.history,
-                                        temperature=0,
-                                        max_completion_tokens=1024,
-                                        top_p=0,
-                                        stop=None)
-    st.session_state.comp_time = chat.usage.completion_time
-    st.session_state.text_response = chat.choices[0].message.content
-    st.session_state.history.append({"role": "assistant", "content": st.session_state.text_response})
+    st.session_state.history.append(HumanMessage(content=st.session_state.prompt))
     
+    response = llm.invoke(st.session_state.history)
+
+    #st.session_state.comp_time = chat.usage.completion_time
+    st.session_state.text_response = response.content
+    st.session_state.history.append(AIMessage(content=response.content))
+  
 def play_audio():
     ai_audio = gTTS(text=st.session_state.text_response, lang = 'ur')
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as audio_file:
@@ -118,5 +124,6 @@ def play_audio():
 
     audio_file.close()
     os.remove(audio_file.name)
+
 if __name__ == "__main__":
     main()
