@@ -66,7 +66,6 @@ def main():
                     generate_response()
                 with st.spinner("🎵 آواز تیار کر رہے ہیں..."):
                     play_audio()
-                st.success("✅ جواب تیار ہے!")
             
             except sr.UnknownValueError:
                 st.error("❌ آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔")
