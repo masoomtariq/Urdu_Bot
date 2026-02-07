@@ -5,6 +5,8 @@
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-green.svg)](https://groq.com/)
 [![LangChain](https://img.shields.io/badge/LangChain-Enabled-yellow.svg)](https://langchain.com/)
 
+🚀 **[Try the Live App](https://urdu-bot.streamlit.app/)** 🚀
+
 An intelligent voice-based conversational AI chatbot designed specifically for **Urdu language** speakers. This bot allows users to interact naturally through voice in Urdu, leveraging cutting-edge AI models and speech processing technologies.
 
 ## 🌟 Features
@@ -174,58 +176,6 @@ Urdu_Bot/
 - Newest messages appear first
 - Full context maintained across session
 
-## 📊 API Limits (Groq Free Tier)
-
-| Metric | Limit |
-|--------|-------|
-| Requests per Minute | 30 |
-| Tokens per Minute | 14,400 |
-| Daily Limit | No hard limit |
-
-**Note:** Much more generous than Google GenAI's 20 requests/day limit.
-
-## 🛠️ Error Handling
-
-The bot handles various error scenarios:
-
-### Rate Limit (429)
-```
-❌ API کی حد پوری ہو گئی۔ چند سیکنڈ انتظار کریں۔
-```
-**Solution:** Wait 60 seconds before next request
-
-### Authentication Error (401)
-```
-❌ API Key غلط ہے۔ براہ کرم .env فائل چیک کریں۔
-```
-**Solution:** Verify your GROQ_API_KEY in `.env` file
-
-### Speech Recognition Failed
-```
-❌ آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔
-```
-**Solution:** Speak clearly near the microphone
-
-### Network Error
-```
-❌ معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔
-```
-**Solution:** Check internet connection and retry
-
-## 🔍 Troubleshooting
-
-**Issue:** Microphone not working
-- **Fix:** Check browser permissions and allow microphone access
-
-**Issue:** No audio output
-- **Fix:** Ensure browser supports audio playback and volume is on
-
-**Issue:** Responses not in Urdu
-- **Fix:** System prompt enforces Urdu - this shouldn't happen. Report as bug.
-
-**Issue:** Slow responses
-- **Fix:** Groq is very fast (~1s). Check your internet connection.
-
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how you can help:
@@ -243,10 +193,6 @@ Contributions are welcome! Here's how you can help:
 - Improve UI/UX design
 - Add unit tests
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **Groq** - For providing ultra-fast LPU inference
@@ -259,6 +205,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Masoom Tariq**
 - GitHub: [@masoomtariq](https://github.com/masoomtariq)
+- Email: mmasoomtariq@gmail.com
+- LinkedIn: [Connect with me](https://www.linkedin.com/feed/)
 
 ## 📞 Support
 
