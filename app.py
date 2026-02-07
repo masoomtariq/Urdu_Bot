@@ -1,14 +1,13 @@
 import streamlit as st
 import speech_recognition as sr
 import tempfile
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from gtts import gTTS
 from dotenv import load_dotenv
 import os
 import hashlib
 from io import BytesIO
-from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 
 load_dotenv()
 
@@ -19,19 +18,20 @@ os.environ["LANGSMITH_TRACING"] = "true"
 os.environ["LANGSMITH_ENDPOINT"] = os.getenv("LANGSMITH_ENDPOINT")
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
 
-google_key = os.getenv("GOOGLE_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
 
 def main():
     st.set_page_config(page_title="Urdu Voice Chatbot", layout="wide")
     st.title("🤖 Urdu Voice Chatbot")
         
     st.sidebar.title('''About this App''')
-    st.sidebar.info(f'''This is a Urdu voice chatbot created using Streamlit. It takes in Urdu voice input and responds in Urdu voice''')
+    st.sidebar.info(f'''This is a Urdu voice chatbot created using Streamlit. It takes in Urdu voice input and responds in Urdu voice using Groq's Llama model.''')
 
     st.sidebar.write("")
     st.sidebar.write("")
 
     st.sidebar.write("Developed by :blue[Masoom Tariq]")
+    st.sidebar.write("Powered by :green[Groq] : Llama 3.3 70B")
     
     # Clear chat button in sidebar
     if st.sidebar.button("🗑️ Clear Chat History", use_container_width=True):
@@ -40,11 +40,6 @@ def main():
         st.rerun()
 
     initialize_state()
-
-    # Display chat history
-    display_chat_history()
-    
-    st.divider()
 
     # Audio input section
     st.subheader("🎤 اپنی آواز ریکارڈ کریں")
@@ -79,43 +74,59 @@ def main():
             except sr.RequestError:
                 st.error("❌ معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔")
             
-            except ChatGoogleGenerativeAIError as e:
-                st.error("❌ معذرت، AI سروس میں خرابی ہے۔ براہ کرم دوبارہ کوشش کریں۔")
-                st.warning("⚠️ براہ کرم بعد میں دوبارہ کوشش کریں")
-            
             except Exception as e:
-                st.error("❌ ایک غیر متوقع خرابی واقع ہوئی۔")
-
-
-def display_chat_history():
-    """Display formatted chat history with messages"""
+                error_msg = str(e)
+                
+                # Check if it's a rate limit error (Groq: 30 req/min)
+                if "429" in error_msg or "rate_limit" in error_msg.lower() or "quota" in error_msg.lower():
+                    st.error("❌ API کی حد پوری ہو گئی (Rate Limit)")
+                    st.warning("⏳ Groq Free: 30 requests/minute - براہ کرم کچھ سیکنڈ انتظار کریں")
+                
+                # Check for authentication error
+                elif "401" in error_msg or "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
+                    st.error("❌ API Key غلط ہے۔ براہ کرم .env فائل چیک کریں")
+                    st.warning("ℹ️ GROQ_API_KEY درکار ہے")
+                
+                else:
+                    st.error("❌ معذرت، AI سروس میں خرابی ہے۔ براہ کرم دوبارہ کوشش کریں۔")
+                    st.warning(f"⚠️ تفصیلات: {error_msg[:150]}")
+                
+                print(f"Error: {type(e).__name__}: {error_msg}")
     
-    # Filter out SystemMessage (only show user and AI messages)
+    # Show previous chat history (if exists)
+    display_previous_chats()
+
+
+def display_previous_chats():
+    """Display previous chat conversations (excluding the current one)"""
+    # Filter out SystemMessage
     chat_messages = [msg for msg in st.session_state.history 
                      if not isinstance(msg, SystemMessage)]
     
-    if not chat_messages:
-        st.info("📭 کوئی بھی بات چیت ابھی شروع نہیں ہوئی۔ اپنا سوال پوچھیں!")
-        return
-    
-    st.subheader("💬 بات چیت کی تاریخ")
-    
-    # Create a container for chat messages
-    chat_container = st.container(border=True)
-    
-    with chat_container:
-        # Display messages in order (oldest to newest)
-        for message in chat_messages:
-            if isinstance(message, HumanMessage):
-                with st.chat_message("user", avatar="👤"):
-                    st.markdown(f"**آپ:** {message.content}")
-            
-            elif isinstance(message, AIMessage):
-                with st.chat_message("assistant", avatar="🤖"):
-                    st.markdown(f"**بوٹ:** {message.content}")
-    
-    # Show message count
-    st.caption(f"📊 کل پیغامات: {len(chat_messages)}")
+    # If there are more than 2 messages (current conversation), show previous ones
+    if len(chat_messages) > 2:
+        st.divider()
+        st.subheader("💬 پچھلی بات چیت")
+        
+        # Show previous conversations (skip the last 2 which are current)
+        previous_messages = chat_messages[:-2]
+        
+        # Display in reverse order (newest first)
+        for i in range(len(previous_messages) - 1, -1, -2):
+            if i >= 1:  # Make sure we have both user and assistant messages
+                user_msg = previous_messages[i-1]
+                assistant_msg = previous_messages[i]
+                
+                with st.container(border=True):
+                    # User message
+                    with st.chat_message("user", avatar="👤"):
+                        st.markdown(f"**آپ:** {user_msg.content}")
+                    
+                    # Assistant message
+                    with st.chat_message("assistant", avatar="🤖"):
+                        st.markdown(f"**بوٹ:** {assistant_msg.content}")
+
+
 
 
 def initialize_state():
@@ -155,7 +166,13 @@ def get_text():
 
 def generate_response():
     """Generate response from LLM using chat history"""
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, api_key=google_key)
+    # Using Groq's Llama model (free tier: 30 requests/minute, 14,400 tokens/minute)
+    # Available models: llama-3.3-70b-versatile, llama-3.1-70b-versatile, mixtral-8x7b-32768
+    llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        temperature=0.7,
+        api_key=groq_api_key
+    )
     st.session_state.history.append(HumanMessage(content=st.session_state.prompt))
     
     response = llm.invoke(st.session_state.history)
