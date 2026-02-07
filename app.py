@@ -6,6 +6,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from gtts import gTTS
 from dotenv import load_dotenv
 import os
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 
 load_dotenv()
 
@@ -50,6 +51,15 @@ def main():
             st.session_state.text_response = "معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔"
             st.session_state.history.append(AIMessage(content=st.session_state.text_response))
             st.error(st.session_state.text_response)
+        
+        except ChatGoogleGenerativeAIError as e:
+            st.session_state.text_response = "معذرت، AI سروس میں خرابی ہے۔ براہ کرم دوبارہ کوشش کریں۔"
+            st.error(st.session_state.text_response)
+            st.warning("براہ کرم بعد میں دوبارہ کوشش کریں")
+        
+        except Exception as e:
+            st.session_state.text_response = "ایک غیر متوقع خرابی واقع ہوئی۔"
+            st.error(st.session_state.text_response)
 
     if st.sidebar.button("Clear Chat History"):
         st.session_state.clear()
@@ -89,7 +99,7 @@ def get_text():
         os.remove(file_path)
 
 def generate_response():
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-pro-exp-02-05", temperature=0, api_key=google_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0, api_key=google_key)
     st.session_state.history.append(HumanMessage(content=st.session_state.prompt))
     
     response = llm.invoke(st.session_state.history)
