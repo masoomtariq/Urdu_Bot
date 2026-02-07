@@ -105,9 +105,6 @@ def display_previous_chats():
     
     # If there are more than 2 messages (current conversation), show previous ones
     if len(chat_messages) > 2:
-        st.divider()
-        st.subheader("💬 پچھلی بات چیت")
-        
         # Show previous conversations (skip the last 2 which are current)
         previous_messages = chat_messages[:-2]
         
