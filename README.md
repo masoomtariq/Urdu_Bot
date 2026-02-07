@@ -206,7 +206,7 @@ Contributions are welcome! Here's how you can help:
 **Masoom Tariq**
 - GitHub: [@masoomtariq](https://github.com/masoomtariq)
 - Email: mmasoomtariq@gmail.com
-- LinkedIn: [Connect with me](https://www.linkedin.com/feed/)
+- LinkedIn: [Connect with me](https://www.linkedin.com/in/masoom-tariq-b0aa89291/))
 
 ## 📞 Support
 
