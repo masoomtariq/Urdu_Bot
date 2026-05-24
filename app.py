@@ -17,8 +17,14 @@ load_dotenv()
 LANGCHAIN_PROJECT = "Urdu Bot"
 os.environ["LANGCHAIN_PROJECT"] = LANGCHAIN_PROJECT
 os.environ["LANGSMITH_TRACING"] = "true"
-os.environ["LANGSMITH_ENDPOINT"] = os.getenv("LANGSMITH_ENDPOINT")
-os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+
+langsmith_endpoint = os.getenv("LANGSMITH_ENDPOINT")
+if langsmith_endpoint:
+    os.environ["LANGSMITH_ENDPOINT"] = langsmith_endpoint
+
+langsmith_api_key = os.getenv("LANGSMITH_API_KEY")
+if langsmith_api_key:
+    os.environ["LANGSMITH_API_KEY"] = langsmith_api_key
 
 groq_api_key = os.getenv("GROQ_API_KEY")
 
@@ -164,6 +170,9 @@ def get_text():
 
 def generate_response():
     """Generate response from LLM using chat history"""
+    if not groq_api_key:
+        raise ValueError("GROQ_API_KEY is missing. Set it in your environment before running the app.")
+
     # Using Groq's Llama model (free tier: 30 requests/minute, 14,400 tokens/minute)
     # Available models: llama-3.3-70b-versatile, llama-3.1-70b-versatile, mixtral-8x7b-32768
     llm = ChatGroq(

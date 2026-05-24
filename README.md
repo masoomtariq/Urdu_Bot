@@ -13,7 +13,7 @@ An intelligent voice-based conversational AI chatbot designed specifically for *
 
 - 🎤 **Voice Input** - Speak naturally in Urdu and get instant text transcription
 - 🤖 **AI-Powered Responses** - Uses Groq's Llama 3.3 70B model for intelligent, context-aware conversations
-- 🔊 **Voice Output** - Responses are automatically converted to natural Urdu speech
+- 🔊 **Voice Output** - Responses are automatically converted to natural Urdu speech using Piper
 - 💬 **Chat History** - Maintains complete conversation context with smart display
 - 🎯 **Urdu-First Design** - Fully optimized for Urdu language processing
 - ⚡ **Lightning Fast** - Powered by Groq's LPU technology for ultra-fast responses
@@ -37,7 +37,7 @@ Interact with the chatbot by:
 | **AI Model** | Llama 3.3 70B Versatile | Natural language understanding |
 | **LLM Integration** | LangChain | Message handling & history |
 | **Speech-to-Text** | Google Speech Recognition | Urdu voice → text conversion |
-| **Text-to-Speech** | gTTS | Urdu text → voice synthesis |
+| **Text-to-Speech** | Piper | Urdu text → voice synthesis with a fine-tuned model |
 | **Observability** | LangSmith | Request tracing & monitoring |
 | **Environment** | python-dotenv | Secure API key management |
 
@@ -54,7 +54,7 @@ Urdu Text Input
       ↓
 Urdu Text Response
       ↓
-[Google Text-to-Speech]
+[Piper Fine-Tuned Urdu Voice Model]
       ↓
 Voice Output (Urdu)
 ```
@@ -124,7 +124,7 @@ The app will open in your browser at `http://localhost:8501`
 4. **Wait for Processing** - The bot will:
    - Transcribe your voice to text
    - Generate an intelligent response
-   - Convert response to voice
+      - Convert response to voice using Piper
 5. **Listen & Read** - View and hear the complete conversation
 6. **Continue Chatting** - Ask follow-up questions with full context
 
@@ -138,11 +138,12 @@ Click the **"🗑️ بات چیت صاف کریں"** button in the sidebar to s
 Urdu_Bot/
 │
 ├── app.py                  # Main application file
-│   ├── main()             # UI orchestration & workflow
-│   ├── initialize_state() # Session state management
-│   ├── get_text()         # Speech recognition (Urdu)
-│   ├── generate_response() # AI response generation
-│   ├── play_audio()       # Text-to-speech synthesis
+│   ├── main()              # UI orchestration & workflow
+│   ├── initialize_state()   # Session state management
+│   ├── get_text()           # Speech recognition (Urdu)
+│   ├── generate_response()  # AI response generation
+│   ├── play_audio()         # Piper-based text-to-speech synthesis
+│   ├── normalize_tts_text()  # Clean text before speech synthesis
 │   └── display_previous_chats() # Chat history display
 │
 ├── requirements.txt        # Python dependencies
@@ -166,7 +167,8 @@ Urdu_Bot/
 - Response added to conversation history
 
 ### 3. **Voice Output**
-- AI response converted to speech using gTTS
+- AI response normalized to remove markdown markers and stray symbols
+- Text converted to speech using Piper with a fine-tuned Urdu voice model
 - Audio buffered in memory (BytesIO) for efficiency
 - Auto-plays in the browser with text display
 
@@ -198,7 +200,8 @@ Contributions are welcome! Here's how you can help:
 - **Groq** - For providing ultra-fast LPU inference
 - **Meta** - For the Llama 3.3 70B model
 - **LangChain** - For excellent LLM integration framework
-- **Google** - For Speech Recognition and Text-to-Speech APIs
+- **Google** - For Speech Recognition APIs
+- **Piper** - For high-quality Urdu text-to-speech synthesis
 - **Streamlit** - For the amazing web framework
 
 ## 👨‍💻 Author
