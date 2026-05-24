@@ -1,6 +1,5 @@
 streamlit
 SpeechRecognition
 langchain-groq
-gtts
-streamlit_chat
-Python_dotenv
+langchain-core
+python-dotenv

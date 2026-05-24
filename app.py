@@ -3,11 +3,13 @@ import speech_recognition as sr
 import tempfile
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from gtts import gTTS
 from dotenv import load_dotenv
 import os
 import hashlib
+import re
 from io import BytesIO
+import stat
+import subprocess
 
 load_dotenv()
 
@@ -138,7 +140,7 @@ def initialize_state():
             st.session_state[key] = value
     
     if not st.session_state.history:
-        instructions = "آپ ایک مددگار اے آئی اسسٹنٹ ہیں۔ آپ ہر وہ کام کر سکتے ہیں جو مناسب ہو لیکن آپ صرف اردو زبان جانتے ہیں اور ہمیشہ صرف اردو زبان میں جواب دیتے ہیں۔"
+        instructions = "آپ ایک مددگار اے آئی اسسٹنٹ ہیں۔ آپ صرف اردو میں جواب دیتے ہیں۔ اپنے جواب سادہ، رواں اور غیر رسمی مگر واضح اردو جملوں میں دیں۔ Markdown، bullet points، star markers، اور اردو کے علاوہ الفاظ استعمال نہ کریں۔"
         st.session_state.history.append(SystemMessage(content=instructions))
 
 
@@ -177,20 +179,61 @@ def generate_response():
   
 
 def play_audio():
-    """Convert text response to speech using gTTS"""
+    """Convert text response to speech using Piper TTS"""
     if not st.session_state.text_response:
         return
+
+    # Piper handles flowing text more reliably than multiline bullet-style output.
+    tts_text = normalize_tts_text(st.session_state.text_response)
         
-    ai_audio = gTTS(text=st.session_state.text_response, lang='ur')
-    
-    # Read audio into bytes instead of saving to file
-    audio_buffer = BytesIO()
-    ai_audio.write_to_fp(audio_buffer)
-    audio_buffer.seek(0)
-    
-    # Pass bytes directly to st.audio (no file path issues)
-    st.audio(audio_buffer, format='audio/mp3')
-    st.write(f"🎤 **بوٹ کا جواب:** {st.session_state.text_response}")
+    # 1. Ensure the piper binary has execution permissions (Crucial for Git deployments)
+    piper_path = "./piper/piper"
+    if os.path.exists(piper_path):
+        current_permissions = os.stat(piper_path).st_mode
+        os.chmod(piper_path, current_permissions | stat.S_IEXEC)
+
+    # 2. Configure Piper command
+    # Using '-' for output_file streams the raw WAV audio directly to memory
+    piper_cmd = [
+        piper_path, 
+        "--model", "ur_PK-fasih-medium-model.onnx",
+        "--config", "ur_PK-fasih-medium-model.onnx.json",
+        "--output_file", "-" 
+    ]
+
+    try:
+        # 3. Run piper, passing text via stdin and capturing WAV via stdout
+        process = subprocess.run(
+            piper_cmd,
+            input=tts_text.encode('utf-8'),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True
+        )
+        
+        # 4. Load the raw WAV bytes into the BytesIO buffer
+        audio_buffer = BytesIO(process.stdout)
+        audio_buffer.seek(0)
+        
+        # 5. Play audio (Piper outputs WAV format) and display text
+        st.audio(audio_buffer, format='audio/wav')
+        st.write(f"🎤 **بوٹ کا جواب:** {st.session_state.text_response}")
+        
+    except subprocess.CalledProcessError as e:
+        st.error(f"TTS Error: {e.stderr.decode('utf-8')}")
+    except FileNotFoundError:
+        st.error("Piper binary not found. Please ensure the './piper/piper' folder is committed to your GitHub repository.")
+
+
+def normalize_tts_text(text):
+    """Flatten multiline assistant text into a single pronunciation-friendly string."""
+    text = text.strip().strip('"“”')
+    text = re.sub(r"(?m)^\s*[*•-]+\s*", "", text)
+    text = re.sub(r"\n+", " ", text)
+    text = re.sub(r"[\*•]+", "", text)
+    text = re.sub(r"[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF0-9A-Za-zऀ-ॿ\s،۔,:;!?()/%-]", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
 if __name__ == "__main__":
