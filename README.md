@@ -36,8 +36,8 @@ Interact with the chatbot by:
 | **LLM Provider** | Groq | Fast AI inference |
 | **AI Model** | Llama 3.3 70B Versatile | Natural language understanding |
 | **LLM Integration** | LangChain | Message handling & history |
-| **Speech-to-Text** | Google Speech Recognition | Urdu voice → text conversion |
-| **Text-to-Speech** | gTTS | Urdu text → voice synthesis |
+| **Speech-to-Text** | Hugging Face Whisper | Fine-tuned Urdu voice → text conversion |
+| **Text-to-Speech** | Piper Urdu voice | Urdu text → natural speech synthesis |
 | **Observability** | LangSmith | Request tracing & monitoring |
 | **Environment** | python-dotenv | Secure API key management |
 
@@ -46,7 +46,7 @@ Interact with the chatbot by:
 ```
 User Voice (Urdu) 
       ↓
-[Google Speech Recognition]
+[Fine-tuned Urdu Whisper]
       ↓
 Urdu Text Input
       ↓
@@ -54,7 +54,7 @@ Urdu Text Input
       ↓
 Urdu Text Response
       ↓
-[Google Text-to-Speech]
+[Piper Urdu Voice]
       ↓
 Voice Output (Urdu)
 ```
@@ -66,6 +66,8 @@ Voice Output (Urdu)
 - Internet connection
 - Groq API key (free tier available)
 - LangSmith API key (optional, for monitoring)
+- `piper-tts` installed with pip
+- First-run access to Hugging Face to download the Whisper and Piper models
 
 ## 🚀 Installation
 
@@ -89,6 +91,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+`piper-tts` is included in the Python dependencies, so `pip install -r requirements.txt` should provide the TTS runtime.
+
 ### 4. Set Up Environment Variables
 
 Create a `.env` file in the project root:
@@ -111,7 +115,7 @@ LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ### Run the Application
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 The app will open in your browser at `http://localhost:8501`
@@ -140,9 +144,9 @@ Urdu_Bot/
 ├── app.py                  # Main application file
 │   ├── main()             # UI orchestration & workflow
 │   ├── initialize_state() # Session state management
-│   ├── get_text()         # Speech recognition (Urdu)
+│   ├── get_text()         # Whisper-based speech recognition (Urdu)
 │   ├── generate_response() # AI response generation
-│   ├── play_audio()       # Text-to-speech synthesis
+│   ├── play_audio()       # Piper-based text-to-speech synthesis
 │   └── display_previous_chats() # Chat history display
 │
 ├── requirements.txt        # Python dependencies
@@ -156,7 +160,7 @@ Urdu_Bot/
 
 ### 1. **Voice Input Processing**
 - User records audio via Streamlit's audio input widget
-- Google Speech Recognition converts Urdu audio to text
+- The fine-tuned `Abdul145/whisper-medium-urdu-custom` model converts Urdu audio to text
 - MD5 hash prevents duplicate processing on page reruns
 
 ### 2. **AI Response Generation**
@@ -166,9 +170,9 @@ Urdu_Bot/
 - Response added to conversation history
 
 ### 3. **Voice Output**
-- AI response converted to speech using gTTS
-- Audio buffered in memory (BytesIO) for efficiency
-- Auto-plays in the browser with text display
+- AI response is written to a temporary WAV file using Piper
+- The Urdu Piper voice from `IhorShevchuk/piper-voice-ur-fasih` is downloaded from Hugging Face
+- Audio is streamed back into the browser with text display
 
 ### 4. **Chat History Management**
 - Current conversation displays inline with voice players
@@ -198,7 +202,7 @@ Contributions are welcome! Here's how you can help:
 - **Groq** - For providing ultra-fast LPU inference
 - **Meta** - For the Llama 3.3 70B model
 - **LangChain** - For excellent LLM integration framework
-- **Google** - For Speech Recognition and Text-to-Speech APIs
+- **Hugging Face** - For the fine-tuned Whisper and Piper voice models
 - **Streamlit** - For the amazing web framework
 
 ## 👨‍💻 Author

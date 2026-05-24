@@ -1,6 +1,9 @@
 streamlit
-SpeechRecognition
 langchain-groq
-gtts
-streamlit_chat
-Python_dotenv
+transformers
+torch
+huggingface_hub
+soundfile
+numpy
+python-dotenv
+piper-tts

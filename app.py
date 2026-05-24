@@ -1,13 +1,19 @@
 import streamlit as st
-import speech_recognition as sr
 import tempfile
+import wave
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from gtts import gTTS
 from dotenv import load_dotenv
 import os
 import hashlib
-from io import BytesIO
+import shutil
+
+import numpy as np
+import soundfile as sf
+import torch
+from huggingface_hub import hf_hub_download
+from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
+from piper import PiperVoice
 
 load_dotenv()
 
@@ -19,6 +25,10 @@ os.environ["LANGSMITH_ENDPOINT"] = os.getenv("LANGSMITH_ENDPOINT")
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
 
 groq_api_key = os.getenv("GROQ_API_KEY")
+WHISPER_MODEL_ID = "Abdul145/whisper-medium-urdu-custom"
+PIPER_REPO_ID = "IhorShevchuk/piper-voice-ur-fasih"
+PIPER_MODEL_FILE = "ur_PK-male-medium.onnx"
+PIPER_CONFIG_FILE = "ur_PK-male-medium.onnx.json"
 
 def main():
     st.set_page_config(page_title="Urdu Voice Chatbot", layout="wide")
@@ -66,12 +76,6 @@ def main():
                     generate_response()
                 with st.spinner("🎵 آواز تیار کر رہے ہیں..."):
                     play_audio()
-            
-            except sr.UnknownValueError:
-                st.error("❌ آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔")
-            
-            except sr.RequestError:
-                st.error("❌ معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔")
             
             except Exception as e:
                 error_msg = str(e)
@@ -142,19 +146,80 @@ def initialize_state():
         st.session_state.history.append(SystemMessage(content=instructions))
 
 
+@st.cache_resource
+def load_whisper_assets():
+    """Load the fine-tuned Urdu Whisper processor and model."""
+    processor = AutoProcessor.from_pretrained(WHISPER_MODEL_ID)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float16 if device == "cuda" else torch.float32
+    model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        WHISPER_MODEL_ID,
+        dtype=dtype,
+        low_cpu_mem_usage=True,
+    )
+    model.to(device)
+    model.eval()
+    return processor, model, device
+
+
+@st.cache_resource
+def load_piper_assets():
+    """Download the Piper voice model and config from Hugging Face."""
+    model_path = hf_hub_download(repo_id=PIPER_REPO_ID, filename=PIPER_MODEL_FILE)
+    config_path = hf_hub_download(repo_id=PIPER_REPO_ID, filename=PIPER_CONFIG_FILE)
+    voice = PiperVoice.load(model_path, config_path)
+    return voice
+
+
 def get_text():
-    """Convert speech to text using Google Speech Recognition"""
-    # Audio is already at position 0 from main() seek operation
+    """Convert speech to text using the fine-tuned Urdu Whisper model."""
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         temp_file.write(st.session_state.audio.read())
         file_path = temp_file.name
 
     try:
-        with sr.AudioFile(file_path) as source:
-            r = sr.Recognizer()
-            recorded = r.record(source)
-            st.session_state.prompt = r.recognize_google(audio_data=recorded, language='ur')
-            st.write(f"📝 **آپ کا پیغام:** {st.session_state.prompt}")
+        audio_array, sample_rate = sf.read(file_path)
+
+        if audio_array.ndim > 1:
+            audio_array = audio_array.mean(axis=1)
+
+        audio_array = audio_array.astype(np.float32)
+
+        if sample_rate != 16000:
+            waveform = torch.from_numpy(audio_array).unsqueeze(0).unsqueeze(0)
+            target_length = int(audio_array.shape[0] * 16000 / sample_rate)
+            audio_array = torch.nn.functional.interpolate(
+                waveform,
+                size=target_length,
+                mode="linear",
+                align_corners=False,
+            ).squeeze().numpy()
+            sample_rate = 16000
+
+        processor, model, device = load_whisper_assets()
+        inputs = processor(
+            audio_array,
+            sampling_rate=sample_rate,
+            return_tensors="pt",
+            return_attention_mask=True,
+        )
+        input_features = inputs.input_features.to(device)
+        attention_mask = inputs.get("attention_mask")
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device)
+
+        with torch.no_grad():
+            generate_kwargs = {"input_features": input_features}
+            if attention_mask is not None:
+                generate_kwargs["attention_mask"] = attention_mask
+            generated_ids = model.generate(**generate_kwargs)
+
+        transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        if not transcription:
+            raise ValueError("Whisper model returned an empty transcription.")
+
+        st.session_state.prompt = transcription
+        st.write(f"📝 **آپ کا پیغام:** {st.session_state.prompt}")
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -177,20 +242,24 @@ def generate_response():
   
 
 def play_audio():
-    """Convert text response to speech using gTTS"""
+    """Convert text response to speech using Piper Urdu voice."""
     if not st.session_state.text_response:
         return
-        
-    ai_audio = gTTS(text=st.session_state.text_response, lang='ur')
-    
-    # Read audio into bytes instead of saving to file
-    audio_buffer = BytesIO()
-    ai_audio.write_to_fp(audio_buffer)
-    audio_buffer.seek(0)
-    
-    # Pass bytes directly to st.audio (no file path issues)
-    st.audio(audio_buffer, format='audio/mp3')
-    st.write(f"🎤 **بوٹ کا جواب:** {st.session_state.text_response}")
+
+    voice = load_piper_assets()
+    output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
+
+    try:
+        with wave.open(output_path, "wb") as wav_file:
+            voice.synthesize_wav(st.session_state.text_response, wav_file)
+
+        with open(output_path, "rb") as audio_file:
+            st.audio(audio_file.read(), format="audio/wav")
+
+        st.write(f"🎤 **بوٹ کا جواب:** {st.session_state.text_response}")
+    finally:
+        if os.path.exists(output_path):
+            os.remove(output_path)
 
 
 if __name__ == "__main__":
