@@ -1,5 +1,5 @@
 streamlit
-SpeechRecognition
 langchain-groq
 langchain-core
 python-dotenv
+groq

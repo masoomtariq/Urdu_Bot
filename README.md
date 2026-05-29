@@ -36,7 +36,7 @@ Interact with the chatbot by:
 | **LLM Provider** | Groq | Fast AI inference |
 | **AI Model** | Llama 3.3 70B Versatile | Natural language understanding |
 | **LLM Integration** | LangChain | Message handling & history |
-| **Speech-to-Text** | Google Speech Recognition | Urdu voice → text conversion |
+| **Speech-to-Text** | Groq Whisper (whisper-large-v3-turbo) | Urdu voice → text conversion via Groq Cloud |
 | **Text-to-Speech** | Piper | Urdu text → voice synthesis with a fine-tuned model |
 | **Observability** | LangSmith | Request tracing & monitoring |
 | **Environment** | python-dotenv | Secure API key management |
@@ -46,7 +46,7 @@ Interact with the chatbot by:
 ```
 User Voice (Urdu) 
       ↓
-[Google Speech Recognition]
+[Groq Speech-to-Text (whisper-large-v3-turbo)]
       ↓
 Urdu Text Input
       ↓
@@ -157,7 +157,7 @@ Urdu_Bot/
 
 ### 1. **Voice Input Processing**
 - User records audio via Streamlit's audio input widget
-- Google Speech Recognition converts Urdu audio to text
+      - Groq Speech-to-Text (`whisper-large-v3-turbo`) converts Urdu audio to text
 - MD5 hash prevents duplicate processing on page reruns
 
 ### 2. **AI Response Generation**
@@ -200,7 +200,7 @@ Contributions are welcome! Here's how you can help:
 - **Groq** - For providing ultra-fast LPU inference
 - **Meta** - For the Llama 3.3 70B model
 - **LangChain** - For excellent LLM integration framework
-- **Google** - For Speech Recognition APIs
+- **Groq** - For Speech-to-Text (Whisper) and model hosting
 - **Piper** - For high-quality Urdu text-to-speech synthesis
 - **Streamlit** - For the amazing web framework
 

@@ -1,6 +1,4 @@
 import streamlit as st
-import speech_recognition as sr
-import tempfile
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from dotenv import load_dotenv
@@ -83,13 +81,11 @@ def main():
                     generate_response()
                 with st.spinner("🎵 آواز تیار کر رہے ہیں..."):
                     play_audio()
-            
-            except sr.UnknownValueError:
-                st.error("❌ آپ کی آواز واضح نہیں ہے - براہ کرم دوبارہ کوشش کریں۔")
-            
-            except sr.RequestError:
-                st.error("❌ معذرت، سسٹم کی سروس مصروف ہے، براہ کرم دوبارہ کوشش کریں۔")
-            
+
+            except ValueError as ve:
+                # Errors raised for invalid/missing audio
+                st.error(f"❌ {str(ve)}")
+
             except Exception as e:
                 error_msg = str(e)
                 
@@ -160,21 +156,42 @@ def initialize_state():
 
 
 def get_text():
-    """Convert speech to text using Google Speech Recognition"""
-    # Audio is already at position 0 from main() seek operation
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-        temp_file.write(st.session_state.audio.read())
-        file_path = temp_file.name
+    """Transcribe uploaded audio using Groq Whisper Turbo"""
+    if st.session_state.audio is None:
+        raise ValueError("No audio file found.")
+
+    # read bytes from Streamlit's uploaded audio object (be robust)
+    try:
+        if hasattr(st.session_state.audio, "getvalue"):
+            audio_bytes = st.session_state.audio.getvalue()
+        else:
+            st.session_state.audio.seek(0)
+            audio_bytes = st.session_state.audio.read()
+    except Exception:
+        raise ValueError("Failed to read audio bytes from the uploaded audio object.")
+
+    file_name = getattr(st.session_state.audio, "name", "audio.wav")
 
     try:
-        with sr.AudioFile(file_path) as source:
-            r = sr.Recognizer()
-            recorded = r.record(source)
-            st.session_state.prompt = r.recognize_google(audio_data=recorded, language='ur')
-            st.write(f"📝 **آپ کا پیغام:** {st.session_state.prompt}")
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        # Lazy import to avoid adding dependency when not used
+        from groq import Groq
+
+        # Instantiate client (will pick up API key from environment if not provided)
+        client = Groq(api_key=groq_api_key) if groq_api_key else Groq()
+
+        transcription = client.audio.transcriptions.create(
+            file=(file_name, audio_bytes),
+            model="whisper-large-v3-turbo",
+            language="ur",
+            temperature=0.0
+        )
+
+        # Groq SDK returns .text for simple transcription
+        st.session_state.prompt = transcription.text.strip()
+        st.write(f"📝 **آپ کا پیغام:** {st.session_state.prompt}")
+
+    except Exception as e:
+        raise Exception(f"Groq Whisper Turbo transcription failed: {str(e)}")
 
 
 def generate_response():
