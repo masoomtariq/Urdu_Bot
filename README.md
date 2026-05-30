@@ -5,7 +5,7 @@
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-green.svg)](https://groq.com/)
 [![LangChain](https://img.shields.io/badge/LangChain-Enabled-yellow.svg)](https://langchain.com/)
 
-🚀 **[Try the Live App](https://urdu-bot.streamlit.app/)** 🚀
+🚀 **[Try the Live App](https://masoomtariq-urdu-bot.hf.space/)** 🚀
 
 An intelligent voice-based conversational AI chatbot designed specifically for **Urdu language** speakers. This bot allows users to interact naturally through voice in Urdu, leveraging cutting-edge AI models and speech processing technologies.
 
@@ -89,11 +89,15 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Download and Set Up Piper
+### 4. Setup Notes for Local Run
 
-The Dockerfile installs Piper in the same way shown below. Run these commands from the project root to download the Piper binary, extract it, remove the archive, and install the Urdu voice model files used by the app.
+For a local Linux run, you need the Piper binary and both Urdu model files in the project root:
 
-#### Linux/macOS or Git Bash
+- `piper/piper`
+- `ur_PK-fasih-medium-model.onnx`
+- `ur_PK-fasih-medium-model.onnx.json`
+
+One-time Linux setup:
 
 ```bash
 mkdir -p piper
@@ -105,22 +109,7 @@ curl -L "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/u
 curl -L "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx.json" -o ur_PK-fasih-medium-model.onnx.json
 ```
 
-#### PowerShell
-
-```powershell
-New-Item -ItemType Directory -Force piper | Out-Null
-Invoke-WebRequest "https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz" -OutFile "$env:TEMP\piper_linux_x86_64.tar.gz"
-tar -xzf "$env:TEMP\piper_linux_x86_64.tar.gz" -C piper --strip-components=1
-Remove-Item "$env:TEMP\piper_linux_x86_64.tar.gz"
-Invoke-WebRequest "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx" -OutFile "ur_PK-fasih-medium-model.onnx"
-Invoke-WebRequest "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx.json" -OutFile "ur_PK-fasih-medium-model.onnx.json"
-```
-
-After running the commands, the project should contain:
-
-- `piper/piper`
-- `ur_PK-fasih-medium-model.onnx`
-- `ur_PK-fasih-medium-model.onnx.json`
+Windows note: the Dockerfile uses the Linux Piper build, so native Windows users should use WSL/Linux or a Windows-compatible Piper release instead of the commands above.
 
 ### 5. Set Up Environment Variables
 
@@ -144,7 +133,7 @@ LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ### Run the Application
 
 ```bash
-streamlit run app.py
+streamlit run main.py
 ```
 
 The app will open in your browser at `http://localhost:8501`
@@ -170,7 +159,7 @@ Click the **"🗑️ بات چیت صاف کریں"** button in the sidebar to s
 ```
 Urdu_Bot/
 │
-├── app.py                  # Main application file
+├── main.py                 # Main application file
 │   ├── main()              # UI orchestration & workflow
 │   ├── initialize_state()   # Session state management
 │   ├── get_text()           # Speech recognition (Urdu)
@@ -188,28 +177,10 @@ Urdu_Bot/
 
 ## 🔧 How It Works
 
-### 1. **Voice Input Processing**
-- User records audio via Streamlit's audio input widget
-      - Groq Speech-to-Text (`whisper-large-v3-turbo`) converts Urdu audio to text
-- MD5 hash prevents duplicate processing on page reruns
-
-### 2. **AI Response Generation**
-- User message added to LangChain conversation history
-- Groq's Llama 3.3 70B model processes the request
-- System prompt ensures responses are in Urdu only
-- Response added to conversation history
-
-### 3. **Voice Output**
-- AI response normalized to remove markdown markers and stray symbols
-- Text converted to speech using Piper with a fine-tuned Urdu voice model
-- Audio buffered in memory (BytesIO) for efficiency
-- Auto-plays in the browser with text display
-
-### 4. **Chat History Management**
-- Current conversation displays inline with voice players
-- Previous conversations show below in text format
-- Newest messages appear first
-- Full context maintained across session
+- Voice input is transcribed with Groq Whisper (`whisper-large-v3-turbo`)
+- Responses are generated with Groq Llama 3.3 70B and stored in chat history
+- Text-to-speech uses Piper with the Urdu voice model files listed above
+- The current conversation stays in session and previous messages remain visible
 
 ## 🤝 Contributing
 
