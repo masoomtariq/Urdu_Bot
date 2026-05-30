@@ -89,7 +89,40 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Set Up Environment Variables
+### 4. Download and Set Up Piper
+
+The Dockerfile installs Piper in the same way shown below. Run these commands from the project root to download the Piper binary, extract it, remove the archive, and install the Urdu voice model files used by the app.
+
+#### Linux/macOS or Git Bash
+
+```bash
+mkdir -p piper
+curl -L "https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz" -o /tmp/piper_linux_x86_64.tar.gz
+tar -xzf /tmp/piper_linux_x86_64.tar.gz -C piper --strip-components=1
+chmod +x piper/piper
+rm -f /tmp/piper_linux_x86_64.tar.gz
+curl -L "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx" -o ur_PK-fasih-medium-model.onnx
+curl -L "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx.json" -o ur_PK-fasih-medium-model.onnx.json
+```
+
+#### PowerShell
+
+```powershell
+New-Item -ItemType Directory -Force piper | Out-Null
+Invoke-WebRequest "https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz" -OutFile "$env:TEMP\piper_linux_x86_64.tar.gz"
+tar -xzf "$env:TEMP\piper_linux_x86_64.tar.gz" -C piper --strip-components=1
+Remove-Item "$env:TEMP\piper_linux_x86_64.tar.gz"
+Invoke-WebRequest "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx" -OutFile "ur_PK-fasih-medium-model.onnx"
+Invoke-WebRequest "https://huggingface.co/IhorShevchuk/piper-voice-ur-fasih/resolve/main/ur_PK-fasih-medium-model.onnx.json" -OutFile "ur_PK-fasih-medium-model.onnx.json"
+```
+
+After running the commands, the project should contain:
+
+- `piper/piper`
+- `ur_PK-fasih-medium-model.onnx`
+- `ur_PK-fasih-medium-model.onnx.json`
+
+### 5. Set Up Environment Variables
 
 Create a `.env` file in the project root:
 
