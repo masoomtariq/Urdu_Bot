@@ -12,28 +12,16 @@ import subprocess
 load_dotenv()
 
 
-def get_clean_env_value(name):
-    """Return an environment variable without surrounding quotes or whitespace."""
-    value = os.getenv(name)
-    if value is None:
-        return None
-    return value.strip().strip('"').strip("'")
-
-
 # LangSmith tracking
 LANGCHAIN_PROJECT = "Urdu Bot"
 os.environ["LANGCHAIN_PROJECT"] = LANGCHAIN_PROJECT
 os.environ["LANGSMITH_TRACING"] = "true"
 
-langsmith_endpoint = get_clean_env_value("LANGSMITH_ENDPOINT")
-if langsmith_endpoint:
-    os.environ["LANGSMITH_ENDPOINT"] = langsmith_endpoint
+os.environ["LANGSMITH_ENDPOINT"] = os.getenv("LANGSMITH_ENDPOINT")
 
-langsmith_api_key = get_clean_env_value("LANGSMITH_API_KEY")
-if langsmith_api_key:
-    os.environ["LANGSMITH_API_KEY"] = langsmith_api_key
+os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
 
-groq_api_key = get_clean_env_value("GROQ_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
 
 def main():
     st.set_page_config(page_title="Urdu Voice Chatbot", layout="wide")
